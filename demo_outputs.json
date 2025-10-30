@@ -1,0 +1,38 @@
+[
+  {
+    "scenario": "Malware Detected (TRUE Flag)",
+    "filename": "malware.exe",
+    "response": {
+      "score": 0.0,
+      "anomaly_string": "Malware Payload Detected",
+      "malware_flag": true
+    }
+  },
+  {
+    "scenario": "Normal Image (Clean)",
+    "filename": "photo.jpg",
+    "response": {
+      "score": 0.03226511552929878,
+      "anomaly_string": "Malware Payload Detected",
+      "malware_flag": true
+    }
+  },
+  {
+    "scenario": "Suspicious Image (High Visual Score)",
+    "filename": "suspicious.jpg",
+    "response": {
+      "score": 0.018275322392582893,
+      "anomaly_string": "Malware Payload Detected",
+      "malware_flag": true
+    }
+  },
+  {
+    "scenario": "Normal Audio (Clean)",
+    "filename": "audio.wav",
+    "response": {
+      "score": 0.44,
+      "anomaly_string": "Unrecognized Visual Pattern",
+      "malware_flag": false
+    }
+  }
+]
