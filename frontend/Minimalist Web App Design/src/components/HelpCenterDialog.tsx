@@ -82,7 +82,7 @@ export function HelpCenterDialog({ open, onOpenChange }: HelpCenterDialogProps) 
       <DialogContent className={`${isExpanded ? 'max-w-7xl h-[90vh]' : 'max-w-2xl'} p-0 gap-0 bg-white dark:bg-gray-900 overflow-hidden transition-all duration-300`}>
         <DialogTitle className="sr-only">Help Center</DialogTitle>
         <DialogDescription className="sr-only">
-          Chat with DeepSecure AI support team
+          Chat with AegisAI support team
         </DialogDescription>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
@@ -105,7 +105,7 @@ export function HelpCenterDialog({ open, onOpenChange }: HelpCenterDialogProps) 
               </div>
               
               <div>
-                <h2 className="text-gray-900 dark:text-gray-100">DeepSecure AI</h2>
+                <h2 className="text-gray-900 dark:text-gray-100">AegisAI</h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                   Within an hour
@@ -159,7 +159,7 @@ export function HelpCenterDialog({ open, onOpenChange }: HelpCenterDialogProps) 
               <div className="w-8 h-8 border-2 border-white rounded"></div>
             </div>
             <div>
-              <h3 className="text-gray-900 dark:text-gray-100 mb-2">DeepSecure Support</h3>
+              <h3 className="text-gray-900 dark:text-gray-100 mb-2">AegisAI Support</h3>
               <p className="text-gray-600 dark:text-gray-400">
                 Ask us anything, or share your feedback.
               </p>

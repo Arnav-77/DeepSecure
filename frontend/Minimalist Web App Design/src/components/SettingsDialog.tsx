@@ -370,7 +370,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     <div className="flex-1">
                       <div className="text-gray-900 dark:text-gray-100 text-sm mb-0.5">Responses</div>
                       <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Get notified when DeepSecure responds to requests that take time, like research or file processing.
+                        Get notified when AegisAI responds to requests that take time, like research or file processing.
                       </p>
                     </div>
                     <button 
@@ -454,7 +454,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     <div className="flex-1">
                       <div className="text-gray-900 dark:text-gray-100 text-sm mb-0.5">Recommendations</div>
                       <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Stay in the loop on new tools, tips, and features from DeepSecure.
+                        Stay in the loop on new tools, tips, and features from AegisAI.
                       </p>
                     </div>
                     <button 

@@ -336,7 +336,7 @@ export function AIAwarenessView() {
             🔒 Deepfake Prevention and Mitigation Strategies
           </CardTitle>
           <CardDescription>
-            The defense against deepfake fraud must be multi-layered (like your DeepSecure project)
+            The defense against deepfake fraud must be multi-layered (like your AegisAI project)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -440,7 +440,7 @@ export function AIAwarenessView() {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="max-w-xs">
-                        Implement technical solutions like DeepSecure that leverage AI to scan files for synthetic 
+                        Implement technical solutions like AegisAI that leverage AI to scan files for synthetic 
                         artifacts and hidden malware payloads.
                       </p>
                     </TooltipContent>
@@ -450,7 +450,7 @@ export function AIAwarenessView() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-700 dark:text-gray-300">
-                Implement technical solutions (like DeepSecure) that leverage AI to scan files for both synthetic 
+                Implement technical solutions (like AegisAI) that leverage AI to scan files for both synthetic 
                 artifacts and hidden malware payloads before they can cause harm.
               </p>
             </CardContent>

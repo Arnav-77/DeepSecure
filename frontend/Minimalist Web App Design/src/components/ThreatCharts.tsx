@@ -47,7 +47,7 @@ const PIE_COLORS = ["#ef4444", "#f97316", "#eab308", "#a855f7", "#22c55e", "#636
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getHistory(): ScanHistoryEntry[] {
     try {
-        const raw = localStorage.getItem("deepsecure_chats");
+        const raw = localStorage.getItem("AegisAI_chats");
         if (!raw) return [];
         const arr = JSON.parse(raw);
         return arr.filter((e: ScanHistoryEntry) => e.result?.score !== undefined);

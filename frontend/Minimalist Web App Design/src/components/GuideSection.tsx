@@ -13,7 +13,7 @@ export function GuideSection() {
       icon: Shield,
       title: "Multi-Modal Detection Methods",
       description:
-        "DeepSecure uses advanced AI-powered detection including Visual CNN analysis (MobileNetV2) for synthetic textures, Auditory MFCC classifiers for audio deepfakes, Binary signature scanning for malware patterns, Metadata forensics (EXIF) for digital fingerprints, and Temporal video analysis for motion anomalies.",
+        "AegisAI uses advanced AI-powered detection including Visual CNN analysis (MobileNetV2) for synthetic textures, Auditory MFCC classifiers for audio deepfakes, Binary signature scanning for malware patterns, Metadata forensics (EXIF) for digital fingerprints, and Temporal video analysis for motion anomalies.",
     },
     {
       icon: Eye,
@@ -32,7 +32,7 @@ export function GuideSection() {
   return (
     <Card className="p-8 dark:bg-gray-800 dark:border-gray-700 h-full flex flex-col">
       <div className="mb-6 flex-shrink-0">
-        <h2 className="text-gray-900 dark:text-gray-100 mb-2">Getting Started with DeepSecure</h2>
+        <h2 className="text-gray-900 dark:text-gray-100 mb-2">Getting Started with AegisAI</h2>
         <p className="text-gray-600 dark:text-gray-400">
           A comprehensive guide to protect yourself from deepfake fraud and malware attacks
         </p>

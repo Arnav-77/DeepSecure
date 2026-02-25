@@ -44,7 +44,7 @@ interface SidebarProps {
   onToggleCollapse: () => void;
 }
 
-const STORAGE_KEY = "deepsecure_previous_chats";
+const STORAGE_KEY = "AegisAI_previous_chats";
 
 const formatRelativeTime = (timestamp: number): string => {
   const now = Date.now();
@@ -200,7 +200,7 @@ export function Sidebar({ activeView, onViewChange, onNavigateToProfile, isColla
               <div className="w-4 h-4 border-2 border-white rounded"></div>
             </div>
             <div className="flex-1">
-              <div className="text-gray-900 dark:text-gray-100">DeepSecure</div>
+              <div className="text-gray-900 dark:text-gray-100">AegisAI</div>
             </div>
             <Button 
               variant="ghost" 

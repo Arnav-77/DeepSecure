@@ -37,18 +37,18 @@ export function DashboardHeader({ title = "Dashboard", onNavigateToProfile, isSi
             <DropdownMenuTrigger asChild>
               <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <div className="w-6 h-6 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs">
-                  SS
+                  AS
                 </div>
-                <span className="text-gray-700 dark:text-gray-300 text-sm">Saransh Sabharwal</span>
+                <span className="text-gray-700 dark:text-gray-300 text-sm">Arnav Soni</span>
                 <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-gray-900 dark:text-gray-100">Saransh Sabharwal</p>
+                  <p className="text-gray-900 dark:text-gray-100">Arnav Soni</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    sabharwalsaransh@gmail.com
+                    arnavsoni@gmail.com
                   </p>
                 </div>
               </DropdownMenuLabel>
