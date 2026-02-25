@@ -8,11 +8,13 @@ import { Progress } from "./ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { addChatToStorage } from "./Sidebar";
-import { 
-  ChevronDown, 
-  Shield, 
-  Upload, 
-  FileImage, 
+import { ResponsePanel } from "./ResponsePanel";
+import { ModalityBreakdownChart, ThreatHistoryChart, ThreatDistributionChart } from "./ThreatCharts";
+import {
+  ChevronDown,
+  Shield,
+  Upload,
+  FileImage,
   Video,
   FileAudio,
   File,
@@ -26,7 +28,8 @@ import {
   Scan,
   FileCode,
   Film,
-  HelpCircle
+  HelpCircle,
+  Download
 } from "lucide-react";
 
 // API Configuration
@@ -36,6 +39,9 @@ interface DetectionResult {
   score: number;
   anomaly_string: string;
   malware_flag: boolean;
+  risk_level: string;
+  recommended_actions: string[];
+  explanation: string;
   components?: {
     visual_score?: number;
     auditory_score?: number;
@@ -67,7 +73,7 @@ export function AuthenticatorView() {
     const handleLoadChat = (e: Event) => {
       const customEvent = e as CustomEvent;
       const { chat } = customEvent.detail || {};
-      
+
       // Add a small delay to ensure component is mounted
       setTimeout(() => {
         if (chat?.result) {
@@ -149,11 +155,11 @@ export function AuthenticatorView() {
 
       const data = await response.json();
       setResult(data);
-      
+
       // Create a chat entry for this file analysis with results
       // Use filename as chat title (max 50 chars)
-      const chatTitle = selectedFile.name.length > 50 
-        ? selectedFile.name.substring(0, 47) + "..." 
+      const chatTitle = selectedFile.name.length > 50
+        ? selectedFile.name.substring(0, 47) + "..."
         : selectedFile.name;
       addChatToStorage(chatTitle, data, selectedFile.name);
     } catch (err) {
@@ -168,6 +174,28 @@ export function AuthenticatorView() {
     setLoadedFilename(null);
     setResult(null);
     setError(null);
+  };
+
+  const handleExport = () => {
+    if (!result) return;
+    const report = {
+      timestamp: new Date().toISOString(),
+      filename: selectedFile?.name ?? loadedFilename ?? "unknown",
+      score: result.score,
+      risk_level: result.risk_level,
+      anomaly_string: result.anomaly_string,
+      malware_flag: result.malware_flag,
+      explanation: result.explanation,
+      recommended_actions: result.recommended_actions,
+      components: result.components,
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `aegisai-report-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const getFileIcon = (file: File) => {
@@ -213,51 +241,50 @@ export function AuthenticatorView() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-              className={`min-h-[400px] w-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition-colors ${
-              isDragging
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`min-h-[400px] w-full border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition-colors ${isDragging
                 ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
                 : "border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
-            }`}
-          >
-            {selectedFile ? (
+                }`}
+            >
+              {selectedFile ? (
                 <div className="text-center p-4">
                   <div className="mb-4 flex items-center justify-center">
                     {getFileIcon(selectedFile)}
-                </div>
+                  </div>
                   <p className="text-gray-900 dark:text-gray-100 mb-2 font-medium">{selectedFile.name}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                     {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type || "Unknown type"}
-                </p>
-                <Button
-                  variant="outline"
+                  </p>
+                  <Button
+                    variant="outline"
                     onClick={handleClear}
-                  className="border-gray-200 dark:border-gray-700"
-                >
-                  Remove File
-                </Button>
-              </div>
-            ) : loadedFilename && result ? (
-              <div className="text-center p-4">
-                <div className="mb-4 flex items-center justify-center">
-                  <File className="w-8 h-8 text-gray-500" />
+                    className="border-gray-200 dark:border-gray-700"
+                  >
+                    Remove File
+                  </Button>
                 </div>
-                <p className="text-gray-900 dark:text-gray-100 mb-2 font-medium">{loadedFilename}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  Previous analysis results
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={handleClear}
-                  className="border-gray-200 dark:border-gray-700"
-                >
-                  Clear Results
-                </Button>
-              </div>
-            ) : (
+              ) : loadedFilename && result ? (
+                <div className="text-center p-4">
+                  <div className="mb-4 flex items-center justify-center">
+                    <File className="w-8 h-8 text-gray-500" />
+                  </div>
+                  <p className="text-gray-900 dark:text-gray-100 mb-2 font-medium">{loadedFilename}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Previous analysis results
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={handleClear}
+                    className="border-gray-200 dark:border-gray-700"
+                  >
+                    Clear Results
+                  </Button>
+                </div>
+              ) : (
                 <div className="text-center px-8 py-12">
                   <div className="flex justify-center items-center mb-6">
                     <button
@@ -278,9 +305,9 @@ export function AuthenticatorView() {
                   </div>
                   <p className="text-gray-900 dark:text-gray-100 mb-3 text-lg font-medium">
                     Drag & drop your file here
-                </p>
-                <p className="text-gray-600 dark:text-gray-400 mb-6 text-base">
-                  Or{" "}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 text-base">
+                    Or{" "}
                     <button
                       onClick={handleArrowClick}
                       className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-medium bg-transparent border-0 p-0"
@@ -292,68 +319,43 @@ export function AuthenticatorView() {
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded inline-block">
                     Max Size: 100MB • Formats: Images, Videos, Audio, Executables
-                </p>
-              </div>
-            )}
-          </div>
+                  </p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex gap-4">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-          <Button 
-            variant="outline" 
-                  onClick={handleAnalyze}
-                  disabled={!selectedFile || isAnalyzing}
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={handleAnalyze}
+            disabled={!selectedFile || isAnalyzing}
             className="flex-1 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Scan className="w-4 h-4 mr-2" />
-                      Analyze for Malware
-                    </>
-                  )}
+            {isAnalyzing ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Analyzing...</>
+            ) : (
+              <><Scan className="w-4 h-4 mr-2" />Analyze File</>
+            )}
           </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-xs">
-                  <strong>Analyze for Malware:</strong> Scans the uploaded file using multiple detection methods:
-                  Visual CNN analysis (MobileNetV2), Auditory MFCC classifier, Binary signature scanning,
-                  Metadata forensics (EXIF), and Temporal frame analysis for videos. Returns a comprehensive
-                  authenticity score and malware detection flag.
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-          <Button 
-                  variant="outline"
-                  onClick={handleClear}
-                  disabled={!selectedFile && !result}
-                  className="flex-1 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={!result}
+            className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
           >
-                  Clear
+            <Download className="w-4 h-4 mr-2" />Export Report
           </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  <strong>Clear:</strong> Removes the selected file and clears all analysis results.
-                  This allows you to upload a new file for analysis.
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button
+            variant="outline"
+            onClick={handleClear}
+            disabled={!selectedFile && !result}
+            className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            Clear
+          </Button>
         </div>
 
         {/* Error Display */}
@@ -368,67 +370,22 @@ export function AuthenticatorView() {
         {/* Results Display */}
         {result && (
           <>
-            {/* Main Malware Detection Alert */}
-            <Alert className={result.malware_flag ? "border-red-500 bg-red-50 dark:bg-red-950/20" : "border-green-500 bg-green-50 dark:bg-green-950/20"}>
-              <div className="flex items-start gap-3">
-                {result.malware_flag ? (
-                  <XCircle className="h-5 w-5 text-red-500 mt-0.5" />
-                ) : (
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <AlertTitle className="flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Malware Detection Status
-                  </AlertTitle>
-                  <AlertDescription className="mt-2">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant={result.malware_flag ? "destructive" : "default"}>
-                        {result.malware_flag ? "MALWARE DETECTED" : "NO MALWARE DETECTED"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm mt-2">
-                      <strong>Anomaly Type:</strong> {result.anomaly_string}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      {result.malware_flag 
-                        ? "⚠️ This file contains suspicious patterns or known malware signatures. Do not execute or open this file."
-                        : "✓ No malware signatures detected. However, always exercise caution with files from untrusted sources."}
-                    </p>
-                  </AlertDescription>
-                </div>
-              </div>
-            </Alert>
+            {/* ── Response Panel: Gauge + Explanation + Actions ── */}
+            <ResponsePanel
+              score={result.score}
+              riskLevel={result.risk_level ?? "Medium"}
+              anomalyString={result.anomaly_string}
+              explanation={result.explanation ?? ""}
+              recommendedActions={result.recommended_actions ?? []}
+              malwareFlag={result.malware_flag}
+            />
 
-            {/* Authenticity Score */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  Authenticity Score
-                </CardTitle>
-                <CardDescription className="max-w-prose">
-                  Overall confidence score based on multi-modal analysis. 
-                  Scores range from 0% (suspicious/high risk) to 100% (authentic/verified).
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Confidence Score</span>
-                    <span className={`text-2xl font-bold ${getScoreColor(result.score)}`}>
-                      {(result.score * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                  <Progress value={result.score * 100} className="h-3" />
-                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                    <span>High Risk</span>
-                    <span className={getScoreColor(result.score)}>{getScoreLabel(result.score)}</span>
-                    <span>Authentic</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* ── Charts Row ── */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <ModalityBreakdownChart components={result.components} />
+              <ThreatHistoryChart />
+              <ThreatDistributionChart />
+            </div>
 
             {/* Component Analysis */}
             {result.components && (
@@ -625,7 +582,7 @@ export function AuthenticatorView() {
                               </div>
                             </>
                           )}
-        </div>
+                        </div>
                       </CardContent>
                     </Card>
                   )}

@@ -117,6 +117,9 @@ async def detect(file: UploadFile = File(...), response: Response = Response()):
 			score=result["score"],
 			anomaly_string=result["anomaly_string"],
 			malware_flag=result["malware_flag"],
+			risk_level=result["risk_level"],
+			recommended_actions=result["recommended_actions"],
+			explanation=result["explanation"],
 			components=result.get("components"),
 		)
 		

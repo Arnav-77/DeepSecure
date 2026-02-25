@@ -7,7 +7,7 @@ from utils.model import visual_predict
 from utils.signature import scan_binary_signature
 from utils.temporal import temporal_check, is_video_file
 from audio_model import predict_auditory_score
-from sar_engine import generate_anomaly_string
+from sar_engine import generate_full_report
 
 AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".aac", ".m4a", ".wma"}
 
@@ -127,8 +127,8 @@ def compute_final_score(
 	# (Removed the score-based malware rule — it incorrectly flagged
 	#  normal images where audio score pulled the average down)
 
-	# S.A.R. Engine Logic: Generate anomaly string based on highest-scoring alert
-	anomaly_string = generate_anomaly_string(
+	# S.A.R. Engine: full report with anomaly, risk, actions, explanation
+	sar_report = generate_full_report(
 		malware_flag=malware_flag,
 		visual_score=visual_score,
 		auditory_score=auditory_score,
@@ -138,8 +138,11 @@ def compute_final_score(
 
 	return {
 		"score": float(final_score),
-		"anomaly_string": anomaly_string,
+		"anomaly_string": sar_report["anomaly_string"],
 		"malware_flag": bool(malware_flag),
+		"risk_level": sar_report["risk_level"],
+		"recommended_actions": sar_report["recommended_actions"],
+		"explanation": sar_report["explanation"],
 		"components": {
 			"visual_score": float(visual_score),
 			"auditory_score": float(auditory_score),
