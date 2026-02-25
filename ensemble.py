@@ -5,9 +5,18 @@ from typing import Any, Dict, Optional
 from utils.metadata import extract_image_metadata
 from utils.model import visual_predict
 from utils.signature import scan_binary_signature
-from utils.temporal import temporal_check
+from utils.temporal import temporal_check, is_video_file
 from audio_model import predict_auditory_score
 from sar_engine import generate_anomaly_string
+
+AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".aac", ".m4a", ".wma"}
+
+
+def _is_audio_file(filename: Optional[str]) -> bool:
+    """Return True only if the filename has an audio extension."""
+    if not filename:
+        return False
+    return any(filename.lower().endswith(ext) for ext in AUDIO_EXTENSIONS)
 
 
 def fusion_weighted_average(
@@ -78,10 +87,15 @@ def compute_final_score(
 			visual_score = 0.0
 
 	if auditory_score is None:
-		try:
-			auditory_score = predict_auditory_score(content)
-		except Exception:
-			auditory_score = 0.0
+		if _is_audio_file(filename):
+			# Only run the audio classifier on actual audio files
+			try:
+				auditory_score = predict_auditory_score(content)
+			except Exception:
+				auditory_score = 0.5  # Neutral on failure
+		else:
+			# Non-audio file: audio score is not applicable, use neutral 0.5
+			auditory_score = 0.5
 
 	if metadata is None:
 		try:
@@ -109,9 +123,9 @@ def compute_final_score(
 		malware_penalty=0.3,  # Strong penalty when malware is detected (reduces confidence by 70%)
 	)
 
-	# Additional check: if score is very low, also flag as malware
-	if final_score < 0.3:
-		malware_flag = True
+	# Malware is determined solely by binary signature detection
+	# (Removed the score-based malware rule — it incorrectly flagged
+	#  normal images where audio score pulled the average down)
 
 	# S.A.R. Engine Logic: Generate anomaly string based on highest-scoring alert
 	anomaly_string = generate_anomaly_string(
