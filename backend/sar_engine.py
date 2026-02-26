@@ -130,70 +130,76 @@ def get_recommended_actions(
     anomaly_string: str,
     malware_flag: bool,
     risk_level: str,
+    similarity_report: Optional[Dict[str, Any]] = None,
+    heuristic_report:  Optional[Dict[str, Any]] = None,
 ) -> List[str]:
+    """
+    Intelligent Automated Threat Response Engine.
+    Maps granular actions based on specific threat indicators.
+    """
+    actions = []
+
+    # 1. ── Critical Similarity-Based Actions (The "Consensus Gate") ───────────
+    if similarity_report:
+        sim_score = similarity_report.get("similarity_score", 0.0)
+        cluster   = similarity_report.get("matched_cluster", "N/A")
+        is_known  = similarity_report.get("is_known_threat", False)
+
+        if sim_score >= 0.85 and cluster != "Benign":
+            actions.append(f"CRITICAL: Isolate device immediately (90%+ match with {cluster})")
+            actions.append(f"Block all outbound network traffic from this host")
+        elif sim_score >= 0.70 and is_known:
+            actions.append(f"Isolate device immediately (Suspicious similarity to {cluster})")
+        
+        if cluster in ("Ransomware", "Dropper"):
+            actions.append("Disconnect from network shares to prevent lateral movement")
+
+    # 2. ── Malware / Signature Actions ──────────────────────────────────────
     if malware_flag or anomaly_string == "Malware Payload Detected":
-        return [
-            "Do NOT open or execute this file",
-            "Delete the file immediately",
-            "Run a full system antivirus scan",
-            "Report the file source to your IT/security team",
-            "Check if the file was received from a trusted sender",
-        ]
-    elif anomaly_string == "Obfuscated Executable":
-        return [
-            "Do not run this file — it shows signs of code obfuscation",
-            "Submit to VirusTotal or a sandbox for dynamic analysis",
-            "Check the file origin and sender before proceeding",
-            "Do not share this file with other systems",
-        ]
-    elif anomaly_string == "Packed/Encrypted Payload":
-        return [
-            "File has abnormally high entropy — likely packed or encrypted",
-            "Do not execute; submit to a sandbox environment",
-            "Request the original unencrypted file from the sender",
-            "Flag for manual security review",
-        ]
-    elif anomaly_string == "Metadata Injection Anomaly":
-        return [
-            "Inspect the file metadata manually for anomalies",
-            "Verify the camera/software listed in the EXIF data",
-            "Be cautious — file may have been edited or manipulated",
-            "Cross-reference the file with its claimed source",
-        ]
-    elif anomaly_string == "AI-Generated / Manipulated Image":
-        return [
-            "This image shows signs of AI generation or digital manipulation",
-            "Do not use as evidence without further forensic verification",
-            "Cross-reference with source or original camera metadata",
-            "Consider reverse image search to verify authenticity",
-        ]
+        actions.append("Block execution and quarantine file immediately")
+        if not any("Isolate" in a for a in actions):
+            actions.append("Run a full system antivirus scan")
+        actions.append("Report the file source to your IT/security team")
+
+    # 3. ── Heuristic-Specific Actions ───────────────────────────────────────
+    if heuristic_report:
+        obf_score = heuristic_report.get("obfuscation_score", 0.0)
+        pck_score = heuristic_report.get("packed_probability", 0.0)
+        ent_score = heuristic_report.get("entropy_score", 0.0)
+
+        if obf_score >= 0.85 or pck_score >= 0.85:
+            actions.append("Submit to deep sandbox for automated de-obfuscation")
+        
+        if ent_score >= 0.95:
+             actions.append("File contains high-entropy payload typical of encrypted malware")
+
+    # 4. ── Anomaly-Specific Defaults ────────────────────────────────────────
+    if anomaly_string == "AI-Generated / Manipulated Image":
+        actions.append("Do not use as evidence without further forensic verification")
+        actions.append("Cross-reference with source or original camera metadata")
+    
     elif anomaly_string == "Abnormal Audio Pattern":
-        return [
-            "Do not trust voice-based authentication from this file",
-            "Verify the speaker's identity through another channel",
-            "Report suspected voice cloning to relevant parties",
-            "Flag the recording for forensic audio analysis",
-        ]
-    elif anomaly_string == "Suspicious Video Content":
-        return [
-            "Video may contain manipulated or deepfake frames",
-            "Do not use as evidence without forensic review",
-            "Cross-reference with original source footage",
-            "Flag for frame-by-frame forensic analysis",
-        ]
-    elif anomaly_string == "Suspicious Activity Detected":
-        return [
-            "Treat this file with caution",
-            "Do not share without further verification",
-            "Consult a security professional if this is a sensitive file",
-            "Run additional malware scanning before use",
-        ]
-    else:  # clean
-        return [
-            "File appears safe based on current analysis",
-            "Always verify the sender before acting on file contents",
-            "Keep your security software up to date",
-        ]
+        actions.append("Do not trust voice-based authentication from this file")
+        actions.append("Report suspected voice cloning to relevant authorities")
+
+    # 5. ── Generic / Risk-Level Fallbacks ────────────────────────────────────
+    if not actions:
+        if risk_level == "High":
+             actions.append("Block execution and flag for manual investigation")
+        elif risk_level == "Medium":
+             actions.append("Proceed with caution; verify sender authenticity")
+        else:
+             actions.append("File appears safe based on multi-modal analysis")
+
+    # Final cleanup: ensure unique actions and limit count
+    seen = set()
+    unique_actions = []
+    for a in actions:
+        if a not in seen:
+            unique_actions.append(a)
+            seen.add(a)
+    
+    return unique_actions[:6]
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -318,6 +324,8 @@ def generate_full_report(
     threat_score: float = 0.0,
     metadata: Optional[Dict[str, Any]] = None,
     filename: Optional[str] = None,
+    similarity_report: Optional[Dict[str, Any]] = None,
+    heuristic_report:  Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Generate the complete SAR report."""
     anomaly_string = generate_anomaly_string(
@@ -333,7 +341,14 @@ def generate_full_report(
     # Always High risk when malware signature is confirmed
     if malware_flag or anomaly_string == "Malware Payload Detected":
         risk_level = "High"
-    recommended_actions = get_recommended_actions(anomaly_string, malware_flag, risk_level)
+    
+    recommended_actions = get_recommended_actions(
+        anomaly_string=anomaly_string,
+        malware_flag=malware_flag,
+        risk_level=risk_level,
+        similarity_report=similarity_report,
+        heuristic_report=heuristic_report,
+    )
     explanation = get_explanation(
         anomaly_string=anomaly_string,
         malware_ml_score=malware_ml_score,

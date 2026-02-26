@@ -61,7 +61,7 @@ def compute_motion_jitter_metric(video_bytes: bytes, max_frames: int = 10) -> Di
 		# If that fails, we'll return default values
 		
 		# Security & Cleanup: Use secure temporary file context manager
-		from utils.security import secure_temp_file
+		from .security import secure_temp_file
 		
 		with secure_temp_file(video_bytes, suffix=".mp4") as tmp_path:
 			cap = cv2.VideoCapture(str(tmp_path))

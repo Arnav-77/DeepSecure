@@ -14,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
 import joblib
 
-from utils.audio import extract_mfcc as _extract_mfcc_dict
+from .utils.audio import extract_mfcc as _extract_mfcc_dict
 
 
 def mfcc_bytes_to_features(audio_bytes: bytes, n_mfcc: int = 13) -> np.ndarray:
@@ -39,7 +39,7 @@ def mfcc_bytes_to_features(audio_bytes: bytes, n_mfcc: int = 13) -> np.ndarray:
 
 @dataclass
 class AudioClfConfig:
-	model_path: Path = Path("models/audio_clf.joblib")
+	model_path: Path = Path(__file__).parent / "malware" / "models" / "audio_clf.joblib"
 	use_svc: bool = False
 	C: float = 1.0
 	n_estimators: int = 200

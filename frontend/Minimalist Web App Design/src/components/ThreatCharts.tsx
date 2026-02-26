@@ -117,7 +117,7 @@ export function ThreatRadarChart({ components }: Props) {
     ];
 
     const maxVal = Math.max(...data.map(d => d.value));
-    const strokeColor = maxVal > 60 ? "#ef4444" : maxVal > 30 ? "#f97316" : "#3b82f6";
+    const strokeColor = maxVal >= 61 ? "#ef4444" : maxVal >= 31 ? "#f97316" : "#22c55e";
 
     return (
         <Card className="border-gray-800">
@@ -168,10 +168,9 @@ export function RiskHeatmap({ components }: Props) {
                 <div className="space-y-2 mt-1">
                     {signals.map((s) => {
                         const pctVal = Math.round(s.value * 100);
-                        const color = pctVal >= 70 ? "#ef4444"
-                            : pctVal >= 45 ? "#f97316"
-                                : pctVal >= 25 ? "#eab308"
-                                    : "#22c55e";
+                        const color = pctVal >= 61 ? "#ef4444"
+                            : pctVal >= 31 ? "#f97316"
+                                : "#22c55e";
                         return (
                             <div key={s.label} className="flex items-center gap-3">
                                 <span className="text-xs text-gray-400 w-32 shrink-0 truncate">{s.label}</span>
@@ -272,7 +271,7 @@ export function SimilarityPanel({ similarityReport }: Props) {
                             <Tooltip formatter={(v: number) => [`${v}%`, "Similarity"]} />
                             <Bar dataKey="sim" radius={[0, 3, 3, 0]}>
                                 {barData.map((entry, i) => (
-                                    <Cell key={i} fill={entry.sim >= 70 ? "#ef4444" : entry.sim >= 45 ? "#f97316" : "#6366f1"} />
+                                    <Cell key={i} fill={entry.sim >= 61 ? "#ef4444" : entry.sim >= 31 ? "#f97316" : "#22c55e"} />
                                 ))}
                             </Bar>
                         </BarChart>
@@ -340,7 +339,7 @@ export function ThreatHistoryChart() {
                             strokeWidth={2}
                             dot={(props) => {
                                 const { cx, cy, payload } = props;
-                                const color = payload.threat >= 65 ? "#ef4444" : payload.threat >= 35 ? "#f97316" : "#22c55e";
+                                const color = payload.threat >= 61 ? "#ef4444" : payload.threat >= 31 ? "#f97316" : "#22c55e";
                                 return <circle key={payload.scan} cx={cx} cy={cy} r={4} fill={color} stroke={color} />;
                             }}
                             activeDot={{ r: 6 }}

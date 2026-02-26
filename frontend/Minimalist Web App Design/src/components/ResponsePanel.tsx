@@ -20,7 +20,7 @@ function ConfidenceGauge({ score }: { score: number }) {
     const offset = circumference - (pct / 100) * circumference;
 
     const color =
-        pct >= 70 ? "#22c55e" : pct >= 40 ? "#f59e0b" : "#ef4444";
+        pct >= 61 ? "#ef4444" : pct >= 31 ? "#f59e0b" : "#22c55e";
 
     return (
         <div className="flex flex-col items-center justify-center gap-1">
@@ -43,7 +43,7 @@ function ConfidenceGauge({ score }: { score: number }) {
                     {pct}%
                 </text>
                 <text x="70" y="84" textAnchor="middle" fontSize="11" fill="#9ca3af">
-                    Confidence
+                    Threat Score
                 </text>
             </svg>
         </div>
@@ -55,6 +55,7 @@ function RiskBadge({ risk }: { risk: string }) {
     const config: Record<string, { color: string; icon: React.ReactNode }> = {
         Low: { color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
         Medium: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400", icon: <AlertTriangle className="w-3.5 h-3.5" /> },
+        Moderate: { color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400", icon: <AlertTriangle className="w-3.5 h-3.5" /> },
         High: { color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400", icon: <XCircle className="w-3.5 h-3.5" /> },
     };
     const c = config[risk] ?? config["Medium"];

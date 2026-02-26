@@ -4,7 +4,7 @@ from typing import Any, Dict, Tuple
 
 import numpy as np
 
-from utils.audio import extract_mfcc as _extract_mfcc_dict
+from .utils.audio import extract_mfcc as _extract_mfcc_dict
 
 
 def extract_mfcc(audio_bytes: bytes, target_sr: int = 22050, n_mfcc: int = 13) -> Tuple[np.ndarray, Dict[str, Any]]:
@@ -23,7 +23,7 @@ def predict_auditory_score(audio_bytes: bytes) -> float:
 	Falls back to heuristic if model file is missing.
 	"""
 	try:
-		from audio_classifier import predict_proba_with_saved_model
+		from .audio_classifier import predict_proba_with_saved_model
 		return predict_proba_with_saved_model(audio_bytes)
 	except Exception:
 		# Fallback heuristic

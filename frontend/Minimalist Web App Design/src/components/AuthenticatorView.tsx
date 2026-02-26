@@ -212,14 +212,16 @@ export function AuthenticatorView() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score < 0.3) return "text-red-500";
-    if (score < 0.7) return "text-yellow-500";
+    const pct = Math.round(score * 100);
+    if (pct >= 61) return "text-red-500";
+    if (pct >= 31) return "text-yellow-500";
     return "text-green-500";
   };
 
   const getScoreLabel = (score: number) => {
-    if (score < 0.3) return "High Risk";
-    if (score < 0.7) return "Moderate Risk";
+    const pct = Math.round(score * 100);
+    if (pct >= 61) return "High Risk";
+    if (pct >= 31) return "Moderate Risk";
     return "Low Risk";
   };
 
@@ -412,7 +414,7 @@ export function AuthenticatorView() {
                       { label: "Threat Score", value: result.components.threat_score, icon: <AlertTriangle className="w-3 h-3" />, color: "#ef4444" },
                     ].filter(s => s.value !== undefined).map((sig) => {
                       const pct = Math.round((sig.value ?? 0) * 100);
-                      const textColor = pct >= 70 ? "#ef4444" : pct >= 40 ? "#f97316" : pct >= 20 ? "#eab308" : "#22c55e";
+                      const textColor = pct >= 61 ? "#ef4444" : pct >= 31 ? "#f97316" : "#22c55e";
                       return (
                         <div key={sig.label} className="bg-gray-800/60 rounded-lg p-3 border border-gray-700 flex flex-col gap-1">
                           <div className="flex items-center gap-1.5 text-xs text-gray-400">

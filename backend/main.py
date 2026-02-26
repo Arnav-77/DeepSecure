@@ -1,13 +1,19 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
+import hashlib
+from sqlalchemy.orm import Session
+from .database.database import SessionLocal, engine, Base, get_db
+from .database import models
 
-from schemas import DetectResponse
-from ensemble import compute_final_score
-from utils.security import validate_file_size, validate_file_extension, sanitize_filename
+from .schemas import DetectResponse
+from .ensemble import compute_final_score
+from .utils.security import validate_file_size, validate_file_extension, sanitize_filename
 
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Detection API", version="1.0.0")
 
@@ -51,16 +57,20 @@ async def health():
 	return {
 		"status": "ok",
 		"components": {
-			"visual_model": "MobileNetV2",
+			"visual_model": "None (Removed)",
 			"auditory_model": "MFCC Classifier",
-			"malware_detection": "Binary Signature Scanner",
+			"malware_detection": "Deep Learning PE Classifier + Similarity Engine",
 			"metadata_extraction": "Pillow EXIF",
 		}
 	}
 
 
 @app.post("/detect")
-async def detect(file: UploadFile = File(...), response: Response = Response()):
+async def detect(
+	file: UploadFile = File(...), 
+	response: Response = Response(),
+	db: Session = Depends(get_db)
+):
 	"""
 	Full API Integration: Detects anomalies and malware in uploaded files.
 	
@@ -102,15 +112,45 @@ async def detect(file: UploadFile = File(...), response: Response = Response()):
 			# For now, allow but could be made stricter
 			pass  # Could raise HTTPException if you want strict extension checking
 
+		# Compute file hash (SHA256) for persistence
+		file_hash = hashlib.sha256(content).hexdigest()
+
+		# Requirement: Store file metadata before processing
+		db_file = models.File(
+			filename=sanitized_filename,
+			file_type=file.content_type or "unknown",
+			file_hash=file_hash,
+		)
+		db.add(db_file)
+		db.commit()
+		db.refresh(db_file)
+
 		# Full API Integration: Connect all functions (Visual, Auditory, Malware)
-		# This computes:
-		# - Visual Score via CNN (MobileNetV2)
-		# - Auditory Score via MFCC classifier
-		# - Malware Flag via binary signature scanning
-		# - Metadata extraction for additional context
-		# - Final ensemble fusion using weighted average
-		# - S.A.R. Engine anomaly string generation
 		result = compute_final_score(content, filename=sanitized_filename)
+
+		# Requirement: Store analysis result after scoring
+		db_result = models.AnalysisResult(
+			file_id=db_file.id,
+			ml_score=result["components"].get("malware_ml_score"),
+			entropy_score=result["components"].get("entropy_score"),
+			heuristic_score=result["components"].get("heuristic_score"),
+			pattern_anomaly=result["components"].get("pattern_score"), # Corresponds to pattern_score in ensemble
+			similarity_score=result["similarity_report"].get("similarity_score", 0.0),
+			final_threat_score=result["score"],
+			risk_level=result["risk_level"],
+		)
+		db.add(db_result)
+
+		# Requirement: Store feature vector
+		feature_vector = result["components"].get("feature_vector")
+		if feature_vector:
+			db_vector = models.FeatureVector(
+				file_id=db_file.id,
+				vector_data={"vector": feature_vector}
+			)
+			db.add(db_vector)
+		
+		db.commit()
 
 		# Create response with CORS headers
 		detect_response = DetectResponse(

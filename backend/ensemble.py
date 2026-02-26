@@ -36,21 +36,19 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 
 # ── project imports ───────────────────────────────────────────────────────────
-sys.path.insert(0, str(Path(__file__).parent))
-
-from utils.metadata import extract_image_metadata
-from utils.signature import scan_binary_signature
-from utils.temporal import temporal_check, is_video_file
-from audio_model import predict_auditory_score
-from sar_engine import generate_full_report
+from .utils.metadata import extract_image_metadata
+from .utils.signature import scan_binary_signature
+from .utils.temporal import temporal_check, is_video_file
+from .audio_model import predict_auditory_score
+from .sar_engine import generate_full_report
 
 # ── Malware ML ────────────────────────────────────────────────────────────────
-from backend.malware import MalwareModel, PEFeatureExtractor
-from backend.malware.heuristics import HeuristicEngine
-from backend.malware.similarity import ThreatDatabase, SimilarityResult, get_threat_db
+from .malware import MalwareModel, PEFeatureExtractor
+from .malware.heuristics import HeuristicEngine
+from .malware.similarity import ThreatDatabase, SimilarityResult, get_threat_db
 
 # ── AI Image Detection ────────────────────────────────────────────────────────
-from backend.image import ImageAnalyzer
+from .image import ImageAnalyzer
 
 _malware_model    = MalwareModel()
 _pe_extractor     = PEFeatureExtractor()
@@ -445,8 +443,8 @@ def compute_final_score(
         or malware_ml_score >= 0.75
     )
 
-    # ── Threat Similarity Search (PE files only) ───────────────────────────────
-    similarity_report: Dict[str, Any] = {
+    # ── Threat Similarity Engine ──────────────────────────────────────────────
+    similarity_report = {
         "similarity_score":  0.0,
         "matched_cluster":   "N/A",
         "matched_subfamily": "N/A",
@@ -461,19 +459,8 @@ def compute_final_score(
             db = get_threat_db()
             sim_result = db.find_similar(_feature_vec, top_k=3)
             similarity_report = sim_result.to_dict()
-            # Store this upload for future similarity queries
-            db.store_upload(
-                filename=filename,
-                feature_vec=_feature_vec,
-                prediction={
-                    "anomaly_string":    sar_report.get("anomaly_string", "") if "sar_report" in dir() else "",
-                    "malware_ml_score":  round(malware_ml_score, 4),
-                    "threat_score":      round(threat_score, 4),
-                    "matched_cluster":   sim_result.matched_cluster,
-                },
-            )
         except Exception:
-            pass   # Similarity is a bonus feature — never break the main pipeline
+            pass
 
     # ── SAR Engine: anomaly string, risk, actions, explanation ────────────────
     sar_report = generate_full_report(
@@ -484,7 +471,26 @@ def compute_final_score(
         threat_score=threat_score,
         metadata=metadata,
         filename=filename,
+        similarity_report=similarity_report,
+        heuristic_report=heuristic_report,
     )
+
+    # ── Persistence (Async/Background optional) ───────────────────────────────
+    if _feature_vec is not None:
+        try:
+             db = get_threat_db()
+             db.store_upload(
+                 filename=filename,
+                 feature_vec=_feature_vec,
+                 prediction={
+                     "anomaly_string":    sar_report.get("anomaly_string", ""),
+                     "malware_ml_score":  round(malware_ml_score, 4),
+                     "threat_score":      round(threat_score, 4),
+                     "matched_cluster":   similarity_report.get("matched_cluster", "N/A"),
+                 },
+             )
+        except Exception:
+             pass
 
 
     return {
@@ -510,6 +516,7 @@ def compute_final_score(
             "signature_check":    signature_check,
             "metadata_keys":      len(metadata.get("exif", {})),
             "heuristic_details":  heuristic_report.get("details", {}),
+            "feature_vector":     _feature_vec.tolist() if _feature_vec is not None else None,
             "temporal_check": {
                 "motion_jitter": temporal_result.get("motion_jitter", 0.0),
                 "is_video":      temporal_result.get("is_video", False),
