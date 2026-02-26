@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/t
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { addChatToStorage } from "./Sidebar";
 import { ResponsePanel } from "./ResponsePanel";
-import { ModalityBreakdownChart, ThreatHistoryChart, ThreatDistributionChart } from "./ThreatCharts";
+import { ThreatRadarChart, RiskHeatmap, SimilarityPanel, ThreatHistoryChart, ThreatDistributionChart, ComponentScores, SimilarityReport } from "./ThreatCharts";
 import {
   ChevronDown,
   Shield,
@@ -29,7 +29,14 @@ import {
   FileCode,
   Film,
   HelpCircle,
-  Download
+  Download,
+  Brain,
+  Cpu,
+  Fingerprint,
+  Target,
+  Zap,
+  Lock,
+  Bug
 } from "lucide-react";
 
 // API Configuration
@@ -42,18 +49,17 @@ interface DetectionResult {
   risk_level: string;
   recommended_actions: string[];
   explanation: string;
-  components?: {
-    visual_score?: number;
-    auditory_score?: number;
-    signature_check?: {
-      has_signature: boolean;
-      matches: string[];
-    };
-    metadata_keys?: number;
-    temporal_check?: {
-      motion_jitter: number;
-      is_video: boolean;
-      frame_count: number;
+  similarity_report?: SimilarityReport;
+  components?: ComponentScores & {
+    heuristic_details?: {
+      strings?: {
+        categories_matched?: string[];
+        high_risk_categories?: string[];
+        total_string_matches?: number;
+      };
+      packing?: {
+        packer_signatures_found?: string[];
+      };
     };
   };
 }
@@ -380,9 +386,138 @@ export function AuthenticatorView() {
               malwareFlag={result.malware_flag}
             />
 
+            {/* ── Malware Intelligence Panel ── */}
+            {result.components && (
+              <Card className="border border-orange-500/30 bg-orange-500/5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-orange-400">
+                    <Brain className="w-5 h-5" />
+                    Malware Intelligence Panel
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Multi-signal analysis — ML model + heuristics + similarity matching
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Score grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[
+                      { label: "ML Probability", value: result.components.malware_ml_score, icon: <Cpu className="w-3 h-3" />, color: "#ef4444" },
+                      { label: "Entropy Score", value: result.components.entropy_score, icon: <Zap className="w-3 h-3" />, color: "#f97316" },
+                      { label: "String Suspicion", value: result.components.string_suspicion, icon: <FileCode className="w-3 h-3" />, color: "#eab308" },
+                      { label: "Obfuscation", value: result.components.obfuscation_score, icon: <Lock className="w-3 h-3" />, color: "#a855f7" },
+                      { label: "Packing", value: result.components.packed_probability, icon: <Bug className="w-3 h-3" />, color: "#dc2626" },
+                      { label: "Pattern Score", value: result.components.pattern_score, icon: <Fingerprint className="w-3 h-3" />, color: "#6366f1" },
+                      { label: "Heuristic Score", value: result.components.heuristic_score, icon: <Shield className="w-3 h-3" />, color: "#0ea5e9" },
+                      { label: "Threat Score", value: result.components.threat_score, icon: <AlertTriangle className="w-3 h-3" />, color: "#ef4444" },
+                    ].filter(s => s.value !== undefined).map((sig) => {
+                      const pct = Math.round((sig.value ?? 0) * 100);
+                      const textColor = pct >= 70 ? "#ef4444" : pct >= 40 ? "#f97316" : pct >= 20 ? "#eab308" : "#22c55e";
+                      return (
+                        <div key={sig.label} className="bg-gray-800/60 rounded-lg p-3 border border-gray-700 flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                            <span style={{ color: sig.color }}>{sig.icon}</span>
+                            {sig.label}
+                          </div>
+                          <div className="text-2xl font-black font-mono" style={{ color: textColor }}>{pct}%</div>
+                          <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: sig.color }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Detected API categories */}
+                  {result.components.heuristic_details?.strings?.categories_matched && result.components.heuristic_details.strings.categories_matched.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                        <FileCode className="w-3.5 h-3.5 text-yellow-500" />
+                        Suspicious API Categories Detected
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {result.components.heuristic_details.strings.categories_matched.map((cat) => (
+                          <Badge
+                            key={cat}
+                            className={`text-xs ${result.components?.heuristic_details?.strings?.high_risk_categories?.includes(cat)
+                              ? "bg-red-500/20 text-red-400 border-red-500/30"
+                              : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                              }`}
+                          >
+                            {result.components?.heuristic_details?.strings?.high_risk_categories?.includes(cat) && "⚠ "}
+                            {cat.replace(/_/g, " ")}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Packer signatures */}
+                  {result.components.heuristic_details?.packing?.packer_signatures_found && result.components.heuristic_details.packing.packer_signatures_found.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                        <Bug className="w-3.5 h-3.5 text-red-500" />
+                        Packer Signatures Detected
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {result.components.heuristic_details.packing.packer_signatures_found.map((sig) => (
+                          <Badge key={sig} className="text-xs bg-red-500/20 text-red-400 border-red-500/30">{sig}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Similarity result */}
+                  {result.similarity_report && result.similarity_report.matched_cluster !== "N/A" && (
+                    <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-purple-300 flex items-center gap-1.5">
+                          <Target className="w-3.5 h-3.5" />
+                          Closest Threat Family Match
+                        </p>
+                        {result.similarity_report.is_known_threat && (
+                          <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30">Known Threat</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-white">{result.similarity_report.matched_cluster}</p>
+                          <p className="text-xs text-gray-400">{result.similarity_report.matched_subfamily}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{result.similarity_report.mitre_tactic}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-3xl font-black text-purple-400">
+                            {Math.round(result.similarity_report.similarity_score * 100)}%
+                          </p>
+                          <p className="text-xs text-gray-400">{result.similarity_report.confidence} confidence</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recommended Action */}
+                  {result.recommended_actions && result.recommended_actions.length > 0 && (
+                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                      <p className="text-xs font-semibold text-blue-300 mb-2 flex items-center gap-1.5">
+                        <Shield className="w-3.5 h-3.5" />
+                        Top Recommended Action
+                      </p>
+                      <p className="text-sm text-gray-300">{result.recommended_actions[0]}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* ── Charts Row ── */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <ModalityBreakdownChart components={result.components} />
+              <ThreatRadarChart components={result.components} />
+              <RiskHeatmap components={result.components} />
+              <SimilarityPanel similarityReport={result.similarity_report} />
+            </div>
+
+            {/* ── Timeline + Distribution Row ── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ThreatHistoryChart />
               <ThreatDistributionChart />
             </div>
@@ -395,7 +530,7 @@ export function AuthenticatorView() {
                     <ChevronDown className={`w-4 h-4 transition-transform ${isAdvancedOpen ? 'rotate-180' : ''}`} />
                     <span className="font-medium">Detailed Component Analysis</span>
                   </div>
-                  <Badge variant="outline">{Object.keys(result.components).length} components</Badge>
+                  <Badge variant="outline">{Object.keys(result!.components!).length} components</Badge>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-4 space-y-4">
                   {/* Visual Score */}
